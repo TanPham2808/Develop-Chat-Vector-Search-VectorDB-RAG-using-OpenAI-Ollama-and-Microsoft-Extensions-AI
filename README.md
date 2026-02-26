@@ -1,1 +1,1 @@
-# Develop-Chat-Vector-Search-VectorDB-RAG-using-OpenAI-Ollama-and-Microsoft-Extensions-AI
+# Lập trình chat (function calling), phân tích hình ảnh (OCR), RAG, Vector DB dùng Github Model & Ollama Model
