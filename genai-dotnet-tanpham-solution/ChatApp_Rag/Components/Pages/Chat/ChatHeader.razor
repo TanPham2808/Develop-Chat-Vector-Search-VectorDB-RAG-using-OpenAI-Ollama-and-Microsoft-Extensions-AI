@@ -1,14 +1,121 @@
-<div class="chat-header-container main-background-gradient">
-    <div class="chat-header-controls page-width">
-        <button class="btn-default" @onclick="@OnNewChat">
-            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="new-chat-icon">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-            </svg>
-            New chat
-        </button>
-    </div>
+<style>
+    /* Bố cục tổng thể của Header */
+    .edu-header-container {
+        position: relative;
+        /* Sử dụng gradient màu xanh đè lên hình nền thư viện trên Unsplash */
+        background-image: linear-gradient(rgba(30, 58, 138, 0.85), rgba(37, 99, 235, 0.85)), url('https://images.unsplash.com/photo-1524901548305-08eeddc35080?q=80&w=2000&auto=format&fit=crop');
+        background-size: cover;
+        background-position: center;
+        border-radius: 0 0 20px 20px;
+        padding: 30px 20px;
+        color: white;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+        margin-bottom: 25px;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
 
-    <h1 class="page-width">ChatApp_Rag</h1>
+    /* Giới hạn chiều rộng để nội dung không bị bè ra màn hình lớn */
+    .edu-header-content {
+        max-width: 900px;
+        margin: 0 auto;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    /* Nhóm Icon và Tiêu đề */
+    .edu-title-wrapper {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+    }
+
+    /* Icon đại diện cho Giáo viên */
+    .edu-avatar {
+        width: 65px;
+        height: 65px;
+        background-color: white;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+    }
+
+        .edu-avatar img {
+            width: 45px;
+            height: 45px;
+        }
+
+    /* Tiêu đề chính */
+    .edu-title {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 700;
+        text-shadow: 1px 1px 3px rgba(0,0,0,0.3);
+    }
+
+    /* Câu slogan nhỏ */
+    .edu-subtitle {
+        margin: 5px 0 0 0;
+        font-size: 1rem;
+        opacity: 0.9;
+        font-weight: 400;
+    }
+
+    /* Nút tạo mới chat */
+    .btn-new-chat {
+        background-color: #ffffff;
+        color: #1e3a8a;
+        border: none;
+        padding: 10px 22px;
+        border-radius: 30px;
+        font-weight: 600;
+        font-size: 0.95rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+    }
+
+        .btn-new-chat:hover {
+            background-color: #f3f4f6;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+        }
+
+        .btn-new-chat svg {
+            width: 20px;
+            height: 20px;
+            stroke-width: 2.5;
+        }
+
+
+</style>
+
+<div class="edu-header-container">
+    <div class="edu-header-content">
+        <div class="edu-title-wrapper">
+            <div class="edu-avatar">
+                <img src="https://cdn-icons-png.flaticon.com/512/194/194936.png" alt="Teacher Icon" />
+            </div>
+            <div>
+                <h1 class="edu-title">Cố Vấn Học Tập AI</h1>
+                <p class="edu-subtitle">Đồng hành cùng em trên con đường tri thức</p>
+            </div>
+        </div>
+
+        <div class="chat-header-controls">
+            <button class="btn-new-chat" @onclick="@OnNewChat">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                </svg>
+                Tạo hội thoại mới
+            </button>
+        </div>
+    </div>
 </div>
 
 @code {

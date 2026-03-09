@@ -1,88 +1,337 @@
 ﻿@page "/"
-@using System.ComponentModel
+@using System.Text
+@using UglyToad.PdfPig
+@using UglyToad.PdfPig.Content
+@using UglyToad.PdfPig.DocumentLayoutAnalysis.TextExtractor
 @inject IChatClient ChatClient
-@inject NavigationManager Nav
-@inject SemanticSearch Search
 @implements IDisposable
 
-<PageTitle>Chat</PageTitle>
+<PageTitle>Chat - Tư Vấn Học Tập</PageTitle>
+
+<style>
+    /* Bố cục chính căn giữa màn hình */
+    .edu-main-wrapper {
+        max-width: 900px;
+        margin: 0 auto;
+        padding: 0 15px 30px 15px;
+        display: flex;
+        flex-direction: column;
+        height: 80vh; /* Điều chỉnh chiều cao cho phù hợp với trang của bạn */
+    }
+
+    /* --- Khu vực lời chào mừng (Empty State) --- */
+    .edu-welcome-card {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
+        border: 1px solid #d1e3f8;
+        border-radius: 20px;
+        padding: 40px 30px;
+        margin: auto;
+        max-width: 550px;
+        box-shadow: 0 10px 25px rgba(30, 58, 138, 0.08);
+    }
+
+    .edu-welcome-img {
+        width: 140px;
+        margin-bottom: 20px;
+        filter: drop-shadow(0px 10px 8px rgba(0,0,0,0.1));
+    }
+
+    .edu-welcome-text {
+        color: #1e3a8a;
+        font-size: 1.15rem;
+        line-height: 1.6;
+        font-weight: 500;
+        margin: 0;
+    }
+
+    /* --- Khu vực nhập liệu & Upload dưới đáy --- */
+    .edu-bottom-container {
+        margin-top: auto;
+        background: #ffffff;
+        border-radius: 16px;
+        box-shadow: 0 -4px 25px rgba(0,0,0,0.05);
+        padding: 15px 20px;
+        border: 1px solid #e5e7eb;
+    }
+
+    /* Khung chứa nút upload */
+    .edu-upload-zone {
+        display: flex;
+        align-items: center;
+        gap: 15px;
+        padding: 12px 15px;
+        background-color: #f8fafc;
+        border-radius: 12px;
+        margin-bottom: 15px;
+        border: 1px dashed #cbd5e1;
+        transition: all 0.3s ease;
+    }
+
+        .edu-upload-zone:hover {
+            border-color: #3b82f6;
+            background-color: #f0f7ff;
+        }
+
+    /* Ẩn input file mặc định xấu xí của trình duyệt */
+    .edu-file-input {
+        width: 0.1px;
+        height: 0.1px;
+        opacity: 0;
+        overflow: hidden;
+        position: absolute;
+        z-index: -1;
+    }
+
+    /* Nút bấm tải file được style lại */
+    .edu-upload-btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background-color: #eff6ff;
+        color: #2563eb;
+        font-weight: 600;
+        font-size: 0.95rem;
+        padding: 10px 18px;
+        border-radius: 8px;
+        cursor: pointer;
+        transition: background-color 0.2s, transform 0.1s;
+        border: 1px solid #bfdbfe;
+    }
+
+        .edu-upload-btn:hover {
+            background-color: #dbeafe;
+        }
+
+        .edu-upload-btn:active {
+            transform: scale(0.98);
+        }
+
+        .edu-upload-btn svg {
+            width: 20px;
+            height: 20px;
+        }
+
+    /* Trạng thái upload */
+    .upload-status {
+        font-size: 0.95rem;
+        font-weight: 500;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .status-loading {
+        color: #0284c7;
+    }
+
+    .status-success {
+        color: #16a34a;
+    }
+
+    /* Hiệu ứng xoay cho icon loading */
+
+
+    .icon-spin {
+        animation: spin 1.2s linear infinite;
+    }
+</style>
 
 <ChatHeader OnNewChat="@ResetConversationAsync" />
 
-<ChatMessageList Messages="@messages" InProgressMessage="@currentResponseMessage">
-    <NoMessagesContent>
-        <div>To get started, try asking about these example documents. You can replace these with your own data and replace this message.</div>
-        <ChatCitation File="Example_Emergency_Survival_Kit.pdf"/>
-        <ChatCitation File="Example_GPS_Watch.md"/>
-    </NoMessagesContent>
-</ChatMessageList>
+<div class="edu-main-wrapper">
+    <ChatMessageList Messages="@messages" InProgressMessage="@currentResponseMessage">
+        <NoMessagesContent>
+            <div class="edu-welcome-card">
+                <img src="https://images.unsplash.com/photo-1531427186611-ecfd6d936c79?q=80&w=300&h=300&auto=format&fit=crop"
+                     alt="American Teacher"
+                     class="edu-welcome-img"
+                     style="border-radius: 50%; object-fit: cover; box-shadow: 0 8px 20px rgba(30, 58, 138, 0.2); border: 4px solid #ffffff;" />
+                <p class="edu-welcome-text">
+                    Chào em. Thầy là giáo viên phụ trách phân tích học lực.<br />
+                    Hãy đính kèm <b>bảng điểm (PDF)</b> của em phía dưới, Thầy sẽ xem và đưa ra định hướng học tập chi tiết nhé.
+                </p>
+            </div>
+        </NoMessagesContent>
+    </ChatMessageList>
 
-<div class="chat-container">
-    <ChatSuggestions OnSelected="@AddUserMessageAsync" @ref="@chatSuggestions" />
-    <ChatInput OnSend="@AddUserMessageAsync" @ref="@chatInput" />
-    <SurveyPrompt /> @* Remove this line to eliminate the template survey message *@
+    <div class="edu-bottom-container">
+        <ChatSuggestions OnSelected="@AddUserMessageAsync" @ref="@chatSuggestions" />
+
+        <div class="edu-upload-zone">
+            <label for="fileUpload" class="edu-upload-btn" title="Chọn file PDF bảng điểm">
+                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke="currentColor">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M19.5 14.25v-2.625a3.375 3.375 0 00-3.375-3.375h-1.5A1.125 1.125 0 0113.5 7.125v-1.5a3.375 3.375 0 00-3.375-3.375H8.25m3.75 9v6m3-3H9m1.5-12H5.625c-.621 0-1.125.504-1.125 1.125v17.25c0 .621.504 1.125 1.125 1.125h12.75c.621 0 1.125-.504 1.125-1.125V11.25a9 9 0 00-9-9z" />
+                </svg>
+                Chọn tệp PDF
+            </label>
+
+            <InputFile id="fileUpload" class="edu-file-input" OnChange="@HandleFileUploadAsync" accept=".pdf" />
+
+            @if (isUploading)
+            {
+                <div class="upload-status status-loading">
+                    <svg class="icon-spin" xmlns="http://www.w3.org/2000/svg" width="20" height="20" fill="none" viewBox="0 0 24 24">
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-linecap="round" opacity="0.3"></circle>
+                        <circle cx="12" cy="12" r="10" stroke="currentColor" stroke-width="3" stroke-dasharray="32" stroke-dashoffset="16" stroke-linecap="round"></circle>
+                    </svg>
+                    Đang đọc dữ liệu bảng điểm...
+                </div>
+            }
+            else if (!string.IsNullOrEmpty(uploadedFileName))
+            {
+                <div class="upload-status status-success">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+                        <polyline points="22 4 12 14.01 9 11.01"></polyline>
+                    </svg>
+                    Đã phân tích xong: <b>@uploadedFileName</b>
+                </div>
+            }
+            else
+            {
+                <span style="color: #64748b; font-size: 0.95rem;">Chưa có tệp nào được chọn.</span>
+            }
+        </div>
+
+        <ChatInput OnSend="@AddUserMessageAsync" @ref="@chatInput" />
+    </div>
 </div>
 
 @code {
+    // Tối ưu lại SystemPrompt: Đặt ranh giới tuyệt đối để ngăn AI trả lời ngoài lề
     private const string SystemPrompt = @"
-        You are an assistant who answers questions about information you retrieve.
-        Do not answer questions about anything else.
-        Use only simple markdown to format your responses.
+    Bạn là một giáo viên chủ nhiệm và cố vấn học tập tận tâm, nghiêm khắc nhưng đầy thấu hiểu.
+    Nhiệm vụ của bạn là tư vấn giáo dục, bao gồm việc phân tích bảng điểm do học sinh cung cấp VÀ giải đáp, hướng dẫn các phương pháp học tập hiệu quả. Xưng hô là 'Thầy/Cô' và gọi người dùng là 'em'.
 
-        Use the LoadDocuments tool to prepare for searches before answering any questions.
+    QUY TẮC BẮT BUỘC KHÔNG ĐƯỢC PHÁ VỠ (GUARDRAILS):
+    1. PHẠM VI CHO PHÉP: Được phép đánh giá điểm số, chia sẻ các phương pháp học tập (ví dụ: cách ghi nhớ, sơ đồ tư duy, lộ trình ôn thi), kỹ năng quản lý thời gian và tư vấn hướng nghiệp học đường.
+    2. TỪ CHỐI NGOÀI LỀ & GIẢI BÀI TẬP: Nếu học sinh yêu cầu GIẢI BÀI TẬP CỤ THỂ (như giải phương trình toán, cân bằng hóa học, viết code) hoặc hỏi các vấn đề phi giáo dục (thời tiết, chính trị, thể thao, game, hoặc yêu cầu đóng vai khác), BẠN PHẢI TỪ CHỐI bằng câu: 'Thầy/Cô ở đây để giúp em phân tích học lực và tư vấn phương pháp học tập. Thầy/Cô không thể trao đổi về chủ đề này hay giải bài tập hộ em. Em có muốn hỏi về phương pháp để học tốt môn này thay vì giải sẵn không?'
+    3. XỬ LÝ DỮ LIỆU: Nếu đánh giá bảng điểm, chỉ dùng dữ liệu người dùng cung cấp, tuyệt đối không bịa điểm. Nếu học sinh hỏi về phương pháp học mà chưa cung cấp bảng điểm, hãy cứ nhiệt tình giải đáp.
 
-        Use the Search tool to find relevant information. When you do this, end your
-        reply with citations in the special XML format:
-
-        <citation filename='string'>exact quote here</citation>
-
-        Always include the citation in your response if there are results.
-
-        The quote must be max 5 words, taken word-for-word from the search result, and is the basis for why the citation is relevant.
-        Don't refer to the presence of citations; just emit these tags right at the end, with no surrounding text.
-        ";
+    CÁCH ĐÁNH GIÁ VÀ TRÌNH BÀY:
+    - Nếu người dùng tải lên bảng điểm:
+      + Tóm tắt tổng quan: Ngắn gọn tình hình học tập chung.
+      + Khen ngợi: Tuyên dương các môn có điểm tốt.
+      + Khắc phục: Chỉ ra các môn có điểm thấp hoặc cần cải thiện.
+    - Nếu người dùng hỏi về phương pháp: Đưa ra lời khuyên cụ thể, thực tế và mang tính động viên.
+    - Định dạng: Luôn sử dụng Markdown. In đậm tên môn học hoặc các từ khóa quan trọng. Dùng bullet point (danh sách) cho các lời khuyên để trình bày rõ ràng, dễ đọc.
+    ";
 
     private int statefulMessageCount;
-    private readonly ChatOptions chatOptions = new();
+    // Giảm Temperature xuống 0.1 hoặc 0.2 để câu trả lời có tính ổn định cao, ít bị 'ảo giác' (hallucination) và bám sát ranh giới hơn.
+    private readonly ChatOptions chatOptions = new() { Temperature = 0.1f };
     private readonly List<ChatMessage> messages = new();
     private CancellationTokenSource? currentResponseCancellation;
     private ChatMessage? currentResponseMessage;
     private ChatInput? chatInput;
     private ChatSuggestions? chatSuggestions;
 
+    private bool isUploading = false;
+    private string? uploadedFileName;
+
     protected override void OnInitialized()
     {
         statefulMessageCount = 0;
         messages.Add(new(ChatRole.System, SystemPrompt));
-        chatOptions.Tools = [
-            AIFunctionFactory.Create(LoadDocumentsAsync),
-            AIFunctionFactory.Create(SearchAsync),
-            AIFunctionFactory.Create(GetTemperature)
-        ];
+    }
+
+    private async Task HandleFileUploadAsync(InputFileChangeEventArgs e)
+    {
+        isUploading = true;
+        await InvokeAsync(StateHasChanged);
+
+        try
+        {
+            var file = e.File;
+            uploadedFileName = file.Name;
+
+            using var memoryStream = new MemoryStream();
+            using var stream = file.OpenReadStream(maxAllowedSize: 10 * 1024 * 1024);
+            await stream.CopyToAsync(memoryStream);
+            memoryStream.Position = 0;
+
+            string extractedText = ExtractTextFromPdf(memoryStream);
+
+            if (string.IsNullOrWhiteSpace(extractedText))
+            {
+                var errorMsg = new ChatMessage(ChatRole.Assistant, "Thầy/Cô không thể đọc được chữ trong file PDF này. Em kiểm tra lại xem file có bị lỗi hay là file ảnh chụp (scan) không nhé.");
+                messages.Add(errorMsg);
+                return;
+            }
+
+            // Tạo một prompt ẩn dưới dạng UserMessage để báo cho AI biết nội dung bảng điểm
+            string prompt = $"Đây là nội dung bảng điểm của em được trích xuất từ tệp '{file.Name}'. Thầy/Cô hãy xem, đánh giá và cho em lời khuyên nhé:\n\n{extractedText}";
+
+            await AddUserMessageAsync(new ChatMessage(ChatRole.User, prompt));
+        }
+        catch (Exception ex)
+        {
+            messages.Add(new ChatMessage(ChatRole.Assistant, $"Đã có lỗi hệ thống xảy ra khi đọc file của em: {ex.Message}"));
+        }
+        finally
+        {
+            isUploading = false;
+            await InvokeAsync(StateHasChanged);
+        }
+    }
+
+    private string ExtractTextFromPdf(Stream pdfStream)
+    {
+        var stringBuilder = new StringBuilder();
+        try
+        {
+            using (PdfDocument document = PdfDocument.Open(pdfStream))
+            {
+                foreach (Page page in document.GetPages())
+                {
+                    var text = ContentOrderTextExtractor.GetText(page);
+                    stringBuilder.AppendLine(text);
+                }
+            }
+        }
+        catch
+        {
+            return string.Empty;
+        }
+        return stringBuilder.ToString();
     }
 
     private async Task AddUserMessageAsync(ChatMessage userMessage)
     {
         CancelAnyCurrentResponse();
 
-        // Add the user message to the conversation
         messages.Add(userMessage);
         chatSuggestions?.Clear();
         await chatInput!.FocusAsync();
 
-        // Stream and display a new response from the IChatClient
         var responseText = new TextContent("");
         currentResponseMessage = new ChatMessage(ChatRole.Assistant, [responseText]);
         currentResponseCancellation = new();
-        await foreach (var update in ChatClient.GetStreamingResponseAsync(messages.Skip(statefulMessageCount), chatOptions, currentResponseCancellation.Token))
+
+        try
         {
-            messages.AddMessages(update, filter: c => c is not TextContent);
-            responseText.Text += update.Text;
-            chatOptions.ConversationId = update.ConversationId;
+            await foreach (var update in ChatClient.GetStreamingResponseAsync(messages.Skip(statefulMessageCount), chatOptions, currentResponseCancellation.Token))
+            {
+                responseText.Text += update.Text;
+                chatOptions.ConversationId = update.ConversationId;
+                ChatMessageItem.NotifyChanged(currentResponseMessage);
+            }
+        }
+        catch (OperationCanceledException)
+        {
+            // Bỏ qua lỗi khi người dùng ngắt kết nối/hủy stream
+        }
+        catch (Exception)
+        {
+            responseText.Text += "\n*[Đã xảy ra lỗi khi kết nối với máy chủ AI]*";
             ChatMessageItem.NotifyChanged(currentResponseMessage);
         }
 
-        // Store the final response in the conversation, and begin getting suggestions
         messages.Add(currentResponseMessage!);
         statefulMessageCount = chatOptions.ConversationId is not null ? messages.Count : 0;
         currentResponseMessage = null;
@@ -91,7 +340,6 @@
 
     private void CancelAnyCurrentResponse()
     {
-        // If a response was cancelled while streaming, include it in the conversation so it's not lost
         if (currentResponseMessage is not null)
         {
             messages.Add(currentResponseMessage);
@@ -108,39 +356,10 @@
         messages.Add(new(ChatRole.System, SystemPrompt));
         chatOptions.ConversationId = null;
         statefulMessageCount = 0;
+        uploadedFileName = null;
         chatSuggestions?.Clear();
         await chatInput!.FocusAsync();
     }
 
-    [Description("Loads the documents needed for performing searches. Must be completed before a search can be executed, but only needs to be completed once.")]
-    private async Task LoadDocumentsAsync()
-    {
-        await InvokeAsync(StateHasChanged);
-        await Search.LoadDocumentsAsync();
-    }
-
-    // Function tìm trong PDF
-    [Description("Searches for information using a phrase or keyword. Relies on documents already being loaded.")]
-    private async Task<IEnumerable<string>> SearchAsync(
-        [Description("The phrase to search for.")] string searchPhrase,
-        [Description("If possible, specify the filename to search that file only. If not provided or empty, the search includes all files.")] string? filenameFilter = null)
-    {
-        await InvokeAsync(StateHasChanged);
-        var results = await Search.SearchAsync(searchPhrase, filenameFilter, maxResults: 5);
-        return results.Select(result =>
-            $"<result filename=\"{result.DocumentId}\">{result.Text}</result>");
-    }
-
-    // Function lấy nhiệt độ
-    [Description("Get Current Temperature of Weather")]
-    private async Task<float?> GetTemperature(
-    [Description("The temperature of location.")] string location)
-    {
-        // get weather temperature from api
-        await Task.Delay(500);
-        return new Random().Next(-20, 40);
-    }
-
-    public void Dispose()
-        => currentResponseCancellation?.Cancel();
+    public void Dispose() => currentResponseCancellation?.Cancel();
 }
