@@ -9,135 +9,8 @@
 <PageTitle>Chat - Tư Vấn Học Tập</PageTitle>
 
 <style>
-    /* Bố cục chính căn giữa màn hình */
-    .edu-main-wrapper {
-        max-width: 900px;
-        margin: 0 auto;
-        padding: 0 15px 30px 15px;
-        display: flex;
-        flex-direction: column;
-        height: 80vh; /* Điều chỉnh chiều cao cho phù hợp với trang của bạn */
-    }
-
-    /* --- Khu vực lời chào mừng (Empty State) --- */
-    .edu-welcome-card {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-        text-align: center;
-        background: linear-gradient(135deg, #ffffff 0%, #f0f7ff 100%);
-        border: 1px solid #d1e3f8;
-        border-radius: 20px;
-        padding: 40px 30px;
-        margin: auto;
-        max-width: 550px;
-        box-shadow: 0 10px 25px rgba(30, 58, 138, 0.08);
-    }
-
-    .edu-welcome-img {
-        width: 140px;
-        margin-bottom: 20px;
-        filter: drop-shadow(0px 10px 8px rgba(0,0,0,0.1));
-    }
-
-    .edu-welcome-text {
-        color: #1e3a8a;
-        font-size: 1.15rem;
-        line-height: 1.6;
-        font-weight: 500;
-        margin: 0;
-    }
-
-    /* --- Khu vực nhập liệu & Upload dưới đáy --- */
-    .edu-bottom-container {
-        margin-top: auto;
-        background: #ffffff;
-        border-radius: 16px;
-        box-shadow: 0 -4px 25px rgba(0,0,0,0.05);
-        padding: 15px 20px;
-        border: 1px solid #e5e7eb;
-    }
-
-    /* Khung chứa nút upload */
-    .edu-upload-zone {
-        display: flex;
-        align-items: center;
-        gap: 15px;
-        padding: 12px 15px;
-        background-color: #f8fafc;
-        border-radius: 12px;
-        margin-bottom: 15px;
-        border: 1px dashed #cbd5e1;
-        transition: all 0.3s ease;
-    }
-
-        .edu-upload-zone:hover {
-            border-color: #3b82f6;
-            background-color: #f0f7ff;
-        }
-
-    /* Ẩn input file mặc định xấu xí của trình duyệt */
-    .edu-file-input {
-        width: 0.1px;
-        height: 0.1px;
-        opacity: 0;
-        overflow: hidden;
-        position: absolute;
-        z-index: -1;
-    }
-
-    /* Nút bấm tải file được style lại */
-    .edu-upload-btn {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        background-color: #eff6ff;
-        color: #2563eb;
-        font-weight: 600;
-        font-size: 0.95rem;
-        padding: 10px 18px;
-        border-radius: 8px;
-        cursor: pointer;
-        transition: background-color 0.2s, transform 0.1s;
-        border: 1px solid #bfdbfe;
-    }
-
-        .edu-upload-btn:hover {
-            background-color: #dbeafe;
-        }
-
-        .edu-upload-btn:active {
-            transform: scale(0.98);
-        }
-
-        .edu-upload-btn svg {
-            width: 20px;
-            height: 20px;
-        }
-
-    /* Trạng thái upload */
-    .upload-status {
-        font-size: 0.95rem;
-        font-weight: 500;
-        display: flex;
-        align-items: center;
-        gap: 8px;
-    }
-
-    .status-loading {
-        color: #0284c7;
-    }
-
-    .status-success {
-        color: #16a34a;
-    }
-
-    /* Hiệu ứng xoay cho icon loading */
-
-
-    .icon-spin {
-        animation: spin 1.2s linear infinite;
+    html, .main-background-gradient {
+        background: none !important;
     }
 </style>
 
@@ -206,7 +79,7 @@
     // Tối ưu lại SystemPrompt: Đặt ranh giới tuyệt đối để ngăn AI trả lời ngoài lề
     private const string SystemPrompt = @"
     Bạn là một giáo viên chủ nhiệm và cố vấn học tập tận tâm, nghiêm khắc nhưng đầy thấu hiểu.
-    Nhiệm vụ của bạn là tư vấn giáo dục, bao gồm việc phân tích bảng điểm do học sinh cung cấp VÀ giải đáp, hướng dẫn các phương pháp học tập hiệu quả. Xưng hô là 'Thầy/Cô' và gọi người dùng là 'em'.
+    Nhiệm vụ của bạn là tư vấn giáo dục, bao gồm việc phân tích bảng điểm do học sinh cung cấp VÀ giải đáp, hướng dẫn các phương pháp học tập hiệu quả. Xưng hô là 'Thầy' và gọi người dùng là 'em'.
 
     QUY TẮC BẮT BUỘC KHÔNG ĐƯỢC PHÁ VỠ (GUARDRAILS):
     1. PHẠM VI CHO PHÉP: Được phép đánh giá điểm số, chia sẻ các phương pháp học tập (ví dụ: cách ghi nhớ, sơ đồ tư duy, lộ trình ôn thi), kỹ năng quản lý thời gian và tư vấn hướng nghiệp học đường.
@@ -264,10 +137,13 @@
                 return;
             }
 
-            // Tạo một prompt ẩn dưới dạng UserMessage để báo cho AI biết nội dung bảng điểm
-            string prompt = $"Đây là nội dung bảng điểm của em được trích xuất từ tệp '{file.Name}'. Thầy/Cô hãy xem, đánh giá và cho em lời khuyên nhé:\n\n{extractedText}";
+            // Data bảng điểm dưới dạng System Message (AI đọc được, nhưng cho UI ẩn text)
+            string hiddenContext = $"[DỮ LIỆU BẢNG ĐIỂM TỪ FILE {file.Name}]\n{extractedText}\n[KẾT THÚC DỮ LIỆU]. Hãy dựa vào đây để tư vấn cho học sinh.";
+            messages.Add(new ChatMessage(ChatRole.System, hiddenContext));
 
-            await AddUserMessageAsync(new ChatMessage(ChatRole.User, prompt));
+            // Gửi một tin nhắn User ngắn gọn để hiển thị lên giao diện
+            string displayMessage = $"Em gửi Thầy/Cô bảng điểm ({file.Name}). Thầy/Cô xem, đánh giá và cho em lời khuyên nhé.";
+            await AddUserMessageAsync(new ChatMessage(ChatRole.User, displayMessage));
         }
         catch (Exception ex)
         {
