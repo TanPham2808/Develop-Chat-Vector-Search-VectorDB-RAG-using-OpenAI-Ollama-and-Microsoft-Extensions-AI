@@ -132,7 +132,7 @@
 
             if (string.IsNullOrWhiteSpace(extractedText))
             {
-                var errorMsg = new ChatMessage(ChatRole.Assistant, "Thầy/Cô không thể đọc được chữ trong file PDF này. Em kiểm tra lại xem file có bị lỗi hay là file ảnh chụp (scan) không nhé.");
+                var errorMsg = new ChatMessage(ChatRole.Assistant, "Thầy không thể đọc được chữ trong file PDF này. Em kiểm tra lại xem file có bị lỗi hay là file ảnh chụp (scan) không nhé.");
                 messages.Add(errorMsg);
                 return;
             }
@@ -183,19 +183,29 @@
 
         messages.Add(userMessage);
         chatSuggestions?.Clear();
-        await chatInput!.FocusAsync();
+
+        if (chatInput != null)
+        {
+            await chatInput.FocusAsync();
+        }
 
         var responseText = new TextContent("");
         currentResponseMessage = new ChatMessage(ChatRole.Assistant, [responseText]);
-        currentResponseCancellation = new();
+        currentResponseCancellation = new CancellationTokenSource();
 
         try
         {
             await foreach (var update in ChatClient.GetStreamingResponseAsync(messages.Skip(statefulMessageCount), chatOptions, currentResponseCancellation.Token))
             {
+                // 1. Nhận từng đoạn text (chunk) từ AI và nối vào
                 responseText.Text += update.Text;
                 chatOptions.ConversationId = update.ConversationId;
-                ChatMessageItem.NotifyChanged(currentResponseMessage);
+
+                // (Nếu thư viện UI của bạn yêu cầu dòng này thì giữ lại)
+                // ChatMessageItem.NotifyChanged(currentResponseMessage);
+
+                // 2. QUAN TRỌNG: Yêu cầu Blazor vẽ lại UI để hiển thị chữ đang chạy
+                StateHasChanged();
             }
         }
         catch (OperationCanceledException)
@@ -205,13 +215,17 @@
         catch (Exception)
         {
             responseText.Text += "\n*[Đã xảy ra lỗi khi kết nối với máy chủ AI]*";
-            ChatMessageItem.NotifyChanged(currentResponseMessage);
+            StateHasChanged(); // Cập nhật UI ngay khi bắt được lỗi
         }
 
+        // 3. Xử lý sau khi stream hoàn tất
         messages.Add(currentResponseMessage!);
         statefulMessageCount = chatOptions.ConversationId is not null ? messages.Count : 0;
         currentResponseMessage = null;
         chatSuggestions?.Update(messages);
+
+        // 4. Cập nhật UI lần cuối
+        StateHasChanged();
     }
 
     private void CancelAnyCurrentResponse()
